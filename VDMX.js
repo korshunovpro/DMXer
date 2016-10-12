@@ -2,7 +2,6 @@
  * "игрушка", очень упрощенная "модель" для понимания dmx512
  */
 
-
 var DeviceLogic = {
     on : 'on',
     color : 'color',
@@ -20,19 +19,16 @@ var DeviceType = {
             channel: {
                 1: {
                     type: DeviceLogic.on,
-                    logic: function (byte) {
+                    logic: function (byte, order) {
 
                     }
                 },
                 2: {
                     type: DeviceLogic.color,
-                    logic: function (byte) {
+                    logic: function (byte, order) {
 
                     }
                 }
-            },
-            run:function(frame) {
-                console.log('run.simple')
             }
         },
         par: {
@@ -40,19 +36,16 @@ var DeviceType = {
             channel: {
                 1: {
                     type: DeviceLogic.on,
-                    logic: function (byte) {
+                    logic: function (byte, order) {
 
                     }
                 },
                 2: {
                     type: DeviceLogic.color,
-                    logic: function (byte) {
+                    logic: function (byte, order) {
 
                     }
                 }
-            },
-            run:function(frame) {
-                console.log('run.par')
             }
         },
         head: {
@@ -60,39 +53,39 @@ var DeviceType = {
             channel: {
                 1: {
                     type: DeviceLogic.on,
-                    logic: function (byte) {
+                    logic: function (byte, order) {
 
                     }
                 },
                 2: {
                     type: DeviceLogic.color,
-                    logic: function (byte) {
+                    logic: function (byte, order) {
+
+                    }
+                },
+                3: {
+                    type: DeviceLogic.x,
+                    logic: function (byte, order) {
+
+                    }
+                },
+                4: {
+                    type: DeviceLogic.y,
+                    logic: function (byte, order) {
 
                     }
                 }
-            },
-            run:function(frame) {
-                console.log('run.head')
             }
         },
-        strob: {
+        strobe: {
             vdmx:true,
             channel: {
                 1: {
                     type: DeviceLogic.on,
-                    logic: function (byte) {
-
-                    }
-                },
-                2: {
-                    type: DeviceLogic.color,
-                    logic: function (byte) {
+                    logic: function (byte, order) {
 
                     }
                 }
-            },
-            run:function(frame) {
-                console.log('run.strob')
             }
         }
     },
@@ -112,11 +105,70 @@ var DeviceType = {
  * @constructor
  */
 function DeviceModel(type) {
-    if (DeviceType.device[type]) {
-        return DeviceType.device[type];
-    } else {
-        throw new Error('Устройств тип "' + type + '" не определено!');
-    }
+    var _self = this;
+    var deviceType = type;
+
+    /**
+     * Реднер "устройства"
+     * @param channel
+     */
+    _self.render = function (order, channel) {
+        var row = document.querySelector('body .wire:first-child');
+
+        var newDevice = document.createElement("div");
+        newDevice.className = 'device ' + deviceType;
+        newDevice.id = 'device' + order;
+
+        var lamp = document.createElement("div");
+        lamp.className = 'lamp';
+
+        var light = document.createElement("div");
+        light.className = 'light';
+
+        var ch = document.createElement("h5");
+        ch.appendChild(document.createTextNode('Ch' + channel));
+
+        var tp = document.createElement("h4");
+        tp.appendChild(document.createTextNode(deviceType));
+
+        lamp.appendChild(light);
+        newDevice.appendChild(lamp);
+        newDevice.appendChild(ch);
+        newDevice.appendChild(tp);
+        row.appendChild(newDevice);
+      };
+
+    _self.getType = function() {
+        return deviceType;
+    };
+
+    /*
+     * Логика
+     * @param order
+     */
+    _self.logic = function (order) {
+
+    };
+
+    /**
+     * Обработка
+     * @param par1
+     * @param par2
+     * @param par3
+     */
+    _self.run = function(par1, par2, par3) {
+        console.log(par1, par2, par3);
+    };
+
+    // init
+    (function(){
+        if (!DeviceType.device[type]) {
+            throw new Error('Нет такого типа "устройст"!');
+        }
+        deviceType = type;
+    })();
+
+    return _self;
 }
 
 
@@ -135,6 +187,18 @@ var VDMX = (function () {
      * @returns {{}}
      */
     _self.connect = function (device) {
+        if (!device.getChannel()) {
+            throw new Error('Не назначен канал на устройстве #' + (connectionCount+1) + '!');
+        }
+
+        if (connectionCount == 7) {
+            throw new Error('Подключено максимальное кол-во устройств!');
+        }
+
+        if (device.getOrder() > 0) {
+            throw new Error('Данное устройство уже подключено!');
+        }
+
         connectionCount++;
         connection[connectionCount] = device;
         connection[connectionCount].setOrder(connectionCount);
@@ -210,10 +274,10 @@ var VDMX = (function () {
 function DeviceVDMX (type) {
 
     var _self = {};
-    var ch = 1;
+    var ch = 0;
     var tp = null;
-    var device = null;
-    var order = 1;
+    var Device = null;
+    var order = 0;
     var outputDevice = null;
 
     /**
@@ -251,7 +315,6 @@ function DeviceVDMX (type) {
      */
     _self.output = function (device) {
         outputDevice = device;
-
     };
 
     /**
@@ -268,13 +331,16 @@ function DeviceVDMX (type) {
         return _self;
     };
 
+    _self.getChannel = function () {
+        return ch;
+    };
+
     /**
      *
      * @param type
      */
     function getDevice(type) {
-        device = new DeviceModel(type);
-        tp = type;
+        Device = new DeviceModel(type);
     }
 
     /**
@@ -283,6 +349,11 @@ function DeviceVDMX (type) {
      */
     _self.setOrder = function (number) {
         order = number;
+        Device.render(_self.getOrder(), _self.getChannel());
+    };
+
+    _self.getOrder = function () {
+        return order;
     };
 
     /**
@@ -290,7 +361,7 @@ function DeviceVDMX (type) {
      * @param frame
      */
     function processing(frame) {
-        device.run(frame);
+        Device.run(frame, order, ch);
     }
 
     // init
