@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>VDMX</title>
+    <script src="src/lib/VDMX.js"></script>
+    <script>
+        var dev1 = new DeviceVDMX('head').setChannel(1);
+        var dev2 = new DeviceVDMX('simple').setChannel(5);
+        var dev3 = new DeviceVDMX('par').setChannel(9);
+
+        VDMX.connect(dev1)
+            .connect(dev2)
+            .connect(dev3);
+
+        VDMX.input('data');
+
+    </script>
+</head>
+<body>
+
+</body>
+</html>
