@@ -2,6 +2,8 @@
  * "игрушка", очень упрощенная "модель" для понимания dmx512
  */
 
+var interval = {};
+
 var DeviceLogic = {
     on : 'on',
     color : 'color',
@@ -83,7 +85,28 @@ var DeviceType = {
                 1: {
                     type: DeviceLogic.on,
                     logic: function (byte, order) {
+                        byte = byte.replace(/([^\d])/i, '');
+                        byte = parseInt(byte);
+                        if (byte > 255) {
+                            byte = 255;
+                        }
+                        var time;
 
+                        console.log(byte);
+
+                        var light = document.querySelector('#device' + order + ' .light');
+                        if (byte < 1) {
+                            clearInterval(interval['device' + order]);
+                            light.classList.remove('on');
+                        } else {
+                            clearInterval(interval['device' + order]);
+                            light.classList.remove('on');
+
+                            time = (1000/parseInt(byte)) * 10;
+                            interval['device' + order] = setInterval(function() {
+                                light.classList.toggle('on');
+                            }, time);
+                        }
                     }
                 }
             }
@@ -146,18 +169,17 @@ function DeviceModel(type) {
      * Логика
      * @param order
      */
-    _self.logic = function (order) {
-
+    _self.logic = function (byte, order) {
+        DeviceType.device[type].channel[1].logic(byte, order);
     };
 
     /**
      * Обработка
-     * @param par1
-     * @param par2
-     * @param par3
+     * @param frame
+     * @param order
      */
-    _self.run = function(par1, par2, par3) {
-        console.log(par1, par2, par3);
+    _self.run = function(frame, order) {
+        _self.logic(frame.byte, order)
     };
 
     // init
@@ -221,15 +243,15 @@ var VDMX = (function () {
      * Входящий пакет данных, отдается первому "устройству", котороре передает данные дальше
      * @param data
      */
-    _self.input = function(data) {
-        if (!checkData(data)) {
+    _self.input = function(frame) {
+        if (!checkData(frame)) {
             throw new Error('Формат данных не соответствует VDMX!' + "\n" + _self.getInfo());
         }
 
         if (!connection[1].hasOwnProperty('isVDMX')) {
             throw new Error('Первым подключено не VDMX утройство!');
         } else {
-            connection[1].input(data, true);
+            connection[1].input(frame, true);
         }
     };
 

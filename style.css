@@ -84,7 +84,7 @@ body {
     margin:0 auto;
     top:4px;
     border-radius:50px;
-    background: #fff;
+    background: #444444;
     overflow: hidden;
 }
 
@@ -94,6 +94,10 @@ body {
     opacity: 0;
     width:100%;
     height:100%;
+}
+
+.device .light.on {
+    opacity: 1;
 }
 
 .device h4 {
